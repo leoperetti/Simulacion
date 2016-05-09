@@ -1,5 +1,8 @@
 package mm1;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
@@ -8,7 +11,7 @@ public class ColaSimple {
 	static ArrayList<Double> vector_tiempos_arribos = new ArrayList<Double>();
 	//Defino constante el tiempo de servicio y el tiempo en el que se produce un arribo
 	private static final double TIEMPO_ENTRE_ARRIBOS = 1.0;
-	private final static double TIEMPO_SERVICIO = 0.6;
+	private final static double TIEMPO_SERVICIO = 0.5;
 	 /* inicializamos el reloj de la simulacion*/
 	static double reloj = 0.0;
 
@@ -20,8 +23,11 @@ public class ColaSimple {
 
     /*iniciamos los contadores estadisticos */
     static double demoras_acumuladas = 0.0; // Ad
+    static ArrayList<Double> array_dd = new ArrayList<Double>();
     static double area_cli_cola = 0.0; // Aq
+    static ArrayList<Double> array_dq = new ArrayList<Double>();
     static double area_uso_servidor = 0.0; // Ab
+    static ArrayList<Double> array_db = new ArrayList<Double>();
 
     static double tiempo_servidor_comienza_ocupado = 0.0;
     /* iniciamos la lista de eventos */
@@ -31,6 +37,7 @@ public class ColaSimple {
 
 
 	public static void main(String[] args) {
+		
 		double tiempo_arribo = reloj + exp(TIEMPO_ENTRE_ARRIBOS);
 		//Genero el primer evento que será un arribo y lo registro en el LEV
 		Evento primerEvento = new Evento("Arribo", tiempo_arribo);
@@ -58,22 +65,11 @@ public class ColaSimple {
 
 	private static void reporte() {
 		System.out.println("LISTA DE EVENTOS(LEV): CANTIDAD DE EVENTOS: "+lista_eventos.size());
-		int cont = 0;
-		int cont2 = 0;
 		for(Evento lista: lista_eventos)
 		{
-			if(lista.getTipo_evento().equals("Arribo"))
-			{
-				cont ++;
-			}
-			if(lista.getTipo_evento().equals("Partida"))
-			{
-				cont2 ++;
-			}
 			System.out.println("-----------------");
-			System.out.println(lista.getTipo_evento()+" dura: "+new DecimalFormat("#.####").format(lista.getTiempo()));
+			System.out.println(lista.getTipo_evento()+" tiempo: "+new DecimalFormat("#.####").format(lista.getTiempo()));
 		}
-		System.out.println(cont + " " + cont2);
 		System.out.println("-------------------------------------------");
 		System.out.println("Vector Tiempos Arribos(VTA):");
 		for(Double d: vector_tiempos_arribos)
@@ -83,6 +79,30 @@ public class ColaSimple {
 		}
 		System.out.println("Cantidad de arribos:"+ vector_tiempos_arribos.size());
 		System.out.println(demoras_acumuladas+" "+area_uso_servidor+" "+ area_cli_cola);
+		
+		try {
+			String ubicacion = "C:\\Users\\nicolas\\desktop\\Simulacion\\";
+	        BufferedWriter out = new BufferedWriter(new FileWriter(ubicacion+"demoras_acumuladas.txt"));
+	            for (Double dd : array_dd)
+	            {
+	            		out.write(new DecimalFormat("#.####").format(dd)+ " \n");
+	            }
+	            out.close();
+	            out = new BufferedWriter(new FileWriter(ubicacion+"area_uso_servidor.txt"));
+	            for (Double db : array_db)
+	            {
+	            		out.write(new DecimalFormat("#.####").format(db)+ " \n");
+	            }
+	            out.close();
+	            out = new BufferedWriter(new FileWriter(ubicacion+"area_cli_cola.txt"));
+	            for (Double db : array_db)
+	            {
+	            		out.write(new DecimalFormat("#.####").format(db)+ " \n");
+	            }
+	            out.close();
+	        } catch (IOException e) {
+	        	e.printStackTrace();
+	        }
 	}
 
 	private static String tiempos()
@@ -106,6 +126,7 @@ public class ColaSimple {
 		if(estado_servidor == true)
 		{
 			area_cli_cola += (nro_clientes_cola * (reloj - tiempo_ultimo_evento));//tiempo - tiempo_ultimo_evento --> tiempo transcurrido desde el último evento hasta ahora
+			array_dq.add(area_cli_cola);
 			nro_clientes_cola ++;
 			vector_tiempos_arribos.add(reloj);
 		}
@@ -132,10 +153,13 @@ public class ColaSimple {
 		else
 		{
 			area_cli_cola += (nro_clientes_cola * (reloj - tiempo_ultimo_evento));
+			array_dq.add(area_cli_cola);
 			area_uso_servidor += (reloj - tiempo_ultimo_evento);
+			array_db.add(area_uso_servidor);
 			nro_clientes_cola --;
 			int ultimoTiempo = (vector_tiempos_arribos.size()-1);
 			demoras_acumuladas =  demoras_acumuladas + (reloj - vector_tiempos_arribos.get(ultimoTiempo));
+			array_dd.add(demoras_acumuladas);
 			nro_clientes_atendidos ++;
 			double nuevo_tiempo_servicio = exp(TIEMPO_SERVICIO);
 			lista_eventos.add(new Evento("Partida", (reloj + nuevo_tiempo_servicio)));
