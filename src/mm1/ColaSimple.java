@@ -38,7 +38,6 @@ public class ColaSimple {
   
 
 
-
 	public static void main(String[] args) {
 		
 		double tiempo_arribo = reloj + exp(TIEMPO_ENTRE_ARRIBOS);
@@ -50,7 +49,7 @@ public class ColaSimple {
 		Evento segundoEvento = new Evento("Partida", Math.pow(2, 32));
 		lista_eventos.add(segundoEvento);
 		
-		while(reloj < 30.0)
+		while(reloj < 1000)
 		{
 			String tipo_evento = tiempos();
 			if(tipo_evento.equals("Arribo"))
@@ -68,20 +67,29 @@ public class ColaSimple {
 
 	private static void reporte() {
 		System.out.println("LISTA DE EVENTOS(LEV): CANTIDAD DE EVENTOS: "+lista_eventos.size());
+		int arribos=0;
 		for(Evento lista: lista_eventos)
 		{
 			System.out.println("-----------------");
 			System.out.println(lista.getTipo_evento()+" tiempo: "+new DecimalFormat("#.####").format(lista.getTiempo()));
+			if(lista.getTipo_evento().equals("Arribo") && lista.getTiempo()<=reloj) arribos++;
 		}
 		System.out.println("-------------------------------------------");
 		System.out.println("Vector Tiempos Arribos(VTA):");
-		for(Double d: vector_tiempos_arribos)
+		System.out.println("Cantidad de arribos:"+ arribos + " \n Mu: "+TIEMPO_SERVICIO + " \n Lambda: "+TIEMPO_ENTRE_ARRIBOS);
+		double sumDB =0;
+		for(Double db :array_db)
 		{
-			System.out.println("                    ---------       ");
-			System.out.println("                     "+new DecimalFormat("#.####").format(d));
+			sumDB+=db;
 		}
-		System.out.println("Cantidad de arribos:"+ vector_tiempos_arribos.size());
-		System.out.println("Demora Promedio: "+demoras_acumuladas/nro_clientes_atendidos+"\n "+"uso promedio del servidor: "+area_uso_servidor/tiempo_ultimo_evento+" \n"+" Tamaño promedio de cola: "+ area_cli_cola/tiempo_ultimo_evento);
+		double sumDQ =0;
+		for(Double dq :array_dq)
+		{
+			sumDQ+=dq;
+		}
+		System.out.println("Demora Promedio: "+demoras_acumuladas+"\n "+"uso promedio del servidor: "+sumDB/reloj+" \n"+" Tamaño promedio de cola: "+ sumDQ);
+		System.out.println("Clientes en cola: "+nro_clientes_cola+ "\n Clientes Atendidos: "+nro_clientes_atendidos);
+		//System.out.println("tamaño db: "+ array_db.size() +" \n tamño dq: "+array_dq.size());
 		
 		try {
 			String ubicacion = "C:\\Users\\nicolas\\desktop\\Simulacion\\";
@@ -128,7 +136,7 @@ public class ColaSimple {
 		
 		if(estado_servidor == true)
 		{
-			area_cli_cola += (nro_clientes_cola * (reloj - tiempo_ultimo_evento));//tiempo - tiempo_ultimo_evento --> tiempo transcurrido desde el último evento hasta ahora
+			area_cli_cola =  (area_cli_cola + (nro_clientes_cola * (reloj - tiempo_ultimo_evento)))/reloj;//tiempo - tiempo_ultimo_evento --> tiempo transcurrido desde el último evento hasta ahora
 			array_dq.add(area_cli_cola);
 			array_tiempo_dq.add(reloj);
 			nro_clientes_cola ++;
@@ -138,9 +146,9 @@ public class ColaSimple {
 		{
 			estado_servidor = true;
 			tiempo_servidor_comienza_ocupado = reloj;
-			nro_clientes_atendidos = nro_clientes_atendidos + 1;
 			array_cli_at.add(nro_clientes_atendidos);
 			array_dd.add(demoras_acumuladas);
+			nro_clientes_atendidos ++;
 			double nuevo_tiempo_servicio = exp(TIEMPO_SERVICIO);
 			lista_eventos.add(new Evento("Partida", (reloj + nuevo_tiempo_servicio)));
 		}
@@ -154,22 +162,24 @@ public class ColaSimple {
 		if(nro_clientes_cola==0)
 		{
 			estado_servidor = false;
-			lista_eventos.add(new Evento("Partida", exp(Math.pow(2, 32))));
+			//lista_eventos.add(new Evento("Partida", exp(Math.pow(2, 32))));
 		}
 		else
 		{
-			area_cli_cola = area_cli_cola+(nro_clientes_cola * (reloj - tiempo_ultimo_evento));
+			area_cli_cola = (area_cli_cola+ (nro_clientes_cola * (reloj - tiempo_ultimo_evento)))/reloj;
 			array_dq.add(area_cli_cola);
 			array_tiempo_dq.add(reloj);
 			
-			area_uso_servidor += (reloj - tiempo_servidor_comienza_ocupado);
+			area_uso_servidor = (area_uso_servidor+ (reloj - tiempo_servidor_comienza_ocupado))/reloj;
 			array_db.add(area_uso_servidor);
 			array_tiempo_db.add(reloj);
 			
 			nro_clientes_cola --;
+			
 			int ultimoTiempo = (vector_tiempos_arribos.size()-1);
-			demoras_acumuladas =  demoras_acumuladas + (reloj - vector_tiempos_arribos.get(ultimoTiempo));
+			demoras_acumuladas =  demoras_acumuladas + (reloj - tiempo_ultimo_evento);
 			array_dd.add(demoras_acumuladas);
+			
 			nro_clientes_atendidos ++;
 			array_cli_at.add(nro_clientes_atendidos);
 			
@@ -179,7 +189,7 @@ public class ColaSimple {
 		tiempo_ultimo_evento = reloj;
 	}
 	
-	 public static double exp(double media) {
-	        return Math.log(1 - Math.random()) / (-(1 / media));
-	    }
+	public static double exp(double media) {
+        return Math.log(1 - Math.random()) / (-(1 / media));
+    }
 }
