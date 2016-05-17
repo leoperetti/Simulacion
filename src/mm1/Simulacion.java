@@ -22,7 +22,7 @@ public class Simulacion {
 	public static void main(String[] args) throws IOException{
 		int posEv;
 		lambda=(float) 0.5;
-		mu=1;
+		mu=(float)0.2;
 		finSimul=100;
 		inicializar();
 		while (reloj<finSimul){

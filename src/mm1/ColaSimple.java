@@ -12,8 +12,8 @@ public class ColaSimple {
 	static ArrayList<Double> vector_tiempos_arribos = new ArrayList<Double>();
 	static int e=0;
 	//Defino constante el tiempo de servicio y el tiempo en el que se produce un arribo
-	private static final double TIEMPO_ENTRE_ARRIBOS = 25;
-	private final static double TIEMPO_SERVICIO = 22;
+	private static final double TIEMPO_ENTRE_ARRIBOS =2;
+	private final static double TIEMPO_SERVICIO = 2;
 	 /* inicializamos el reloj de la simulacion*/
 	static double reloj = 0.0;
 
@@ -77,9 +77,13 @@ public class ColaSimple {
 			if(lista.getTipo_evento().equals("Arribo") && lista.getTiempo()<=reloj) arribos++;
 		}
 		System.out.println("-------------------------------------------");
-		System.out.println("Vector Tiempos Arribos(VTA):");
-		System.out.println("Cantidad de arribos:"+ arribos + " \n\n Tiempo de servicio: "+TIEMPO_SERVICIO + " segundos/persona \n Tiempo entre arribos: "+TIEMPO_ENTRE_ARRIBOS+" segundos/persona \n\n");
-		System.out.println(" Demora Promedio: "+demoras_acumuladas/nro_clientes_atendidos+" segundos \n "+"uso promedio del servidor: "+area_uso_servidor/reloj+" \n"+" Tamaño promedio de cola: "+ area_cli_cola/reloj+" personas");
+		/*System.out.println("Vector Tiempos Arribos(VTA):");
+		for(int i=0;i<vector_tiempos_arribos.size();i++)
+		{
+			System.out.println(vector_tiempos_arribos.get(i));
+		}*/
+		System.out.println("Cantidad de arribos:"+ arribos + " \n\n Tiempo de servicio: "+TIEMPO_SERVICIO + " personas/segundo \n Tiempo entre arribos: "+TIEMPO_ENTRE_ARRIBOS+" segundos/persona \n\n");
+		System.out.println(" Demora Promedio: "+new DecimalFormat("#.####").format(demoras_acumuladas/nro_clientes_atendidos)+" segundos \n "+"uso promedio del servidor: "+new DecimalFormat("#.####").format(area_uso_servidor/reloj)+" \n"+" Tamaño promedio de cola: "+ new DecimalFormat("#.####").format(area_cli_cola/reloj)+" personas");
 		System.out.println("\n\n Clientes en cola: "+nro_clientes_cola+ "\n Clientes Atendidos: "+nro_clientes_atendidos);
 		//System.out.println("tamaño db: "+ array_db.size() +" \n tamño dq: "+array_dq.size());
 		
@@ -88,7 +92,7 @@ public class ColaSimple {
 	        BufferedWriter out = new BufferedWriter(new FileWriter(ubicacion+"demoras_acumuladas.txt"));
 	            for (int i=0;i<array_dd.size();i++)
 	            {
-	            		out.write(new DecimalFormat("#.####").format(array_dd.get(i))+ " \t "+array_cli_at.get(i)+" \n");
+	            		out.write(array_cli_at.get(i)+" \t"+new DecimalFormat("#.####").format(array_dd.get(i))+" \n");
 	            }
 	            out.close();
 	            out = new BufferedWriter(new FileWriter(ubicacion+"area_uso_servidor.txt"));
@@ -127,13 +131,15 @@ public class ColaSimple {
 
 	private static void arribo() {
 		
-		if(servidor_ocupado == true)
+		if(servidor_ocupado)
 		{
 			area_cli_cola =  area_cli_cola + (nro_clientes_cola * (reloj - tiempo_ultimo_evento));//tiempo - tiempo_ultimo_evento --> tiempo transcurrido desde el último evento hasta ahora
 			array_dq.add(area_cli_cola/reloj);
 			array_tiempo_dq.add(reloj);
 			nro_clientes_cola ++;
 			vector_tiempos_arribos.add(reloj);
+			double nuevo_tiempo_servicio = exp(TIEMPO_SERVICIO);
+			lista_eventos.add(new Evento("Partida", (reloj + nuevo_tiempo_servicio)));
 		}
 		else
 		{
@@ -142,8 +148,8 @@ public class ColaSimple {
 			array_cli_at.add(nro_clientes_atendidos);
 			array_dd.add(demoras_acumuladas);
 			nro_clientes_atendidos ++;	
-			double nuevo_tiempo_servicio = exp(TIEMPO_SERVICIO);
-			lista_eventos.add(new Evento("Partida", (reloj + nuevo_tiempo_servicio)));
+			//double nuevo_tiempo_servicio = exp(1/TIEMPO_SERVICIO);
+			//lista_eventos.add(new Evento("Partida", (reloj + nuevo_tiempo_servicio)));
 		}
 		double proximo_arribo = exp(TIEMPO_ENTRE_ARRIBOS);
 		lista_eventos.add(new Evento("Arribo", (reloj + proximo_arribo)));
@@ -190,7 +196,7 @@ public class ColaSimple {
 		Random rand=new Random();
 	    double random;
 	    random=rand.nextDouble();
-	    retorno=-((Math.log(random/coef)/(coef)));
+	    retorno=Math.log(1-random/coef)/-coef;
 	    return retorno;
     }
 }
