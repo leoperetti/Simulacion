@@ -22,7 +22,7 @@ public class Simulacion {
 	public static void main(String[] args) throws IOException{
 		int posEv;
 		lambda=(float) 0.5;
-		mu=(float)0.2;
+		mu=(float)0.5;
 		finSimul=100;
 		inicializar();
 		while (reloj<finSimul){
@@ -105,7 +105,7 @@ public class Simulacion {
 	}
 
 	private static void reportar() throws IOException {
-		String ruta = "archivo.txt";
+		String ruta = "C:\\Users\\nicolas\\desktop\\Simulacion\\archivo.txt";
         File archivo = new File(ruta);
         BufferedWriter bw;
         arregloTiempo.remove(1);

@@ -12,8 +12,17 @@ public class ColaSimple {
 	static ArrayList<Double> vector_tiempos_arribos = new ArrayList<Double>();
 	static int e=0;
 	//Defino constante el tiempo de servicio y el tiempo en el que se produce un arribo
-	private static final double TIEMPO_ENTRE_ARRIBOS =2;
-	private final static double TIEMPO_SERVICIO = 2;
+	
+	//el factor de utilizacion es lambda/mu, debe ser mayor a 1
+	private static final double TIEMPO_ENTRE_ARRIBOS =2.8; //frecuencia
+	private final static double TIEMPO_SERVICIO = 3; //tiempo
+	
+	//Analisis de Resultados
+	private static final int KELEMENTOS=1;
+	static ArrayList<Double> array_tiempo_kElemento = new ArrayList<Double>();
+	static ArrayList<Double> array_kElementos = new ArrayList<Double>();
+	static Double acumKElementos = 0.0;
+	
 	 /* inicializamos el reloj de la simulacion*/
 	static double reloj = 0.0;
 
@@ -45,13 +54,14 @@ public class ColaSimple {
 		double tiempo_arribo = reloj + exp(TIEMPO_ENTRE_ARRIBOS);
 		//Genero el primer evento que será un arribo y lo registro en el LEV
 		Evento primerEvento = new Evento("Arribo", tiempo_arribo);
+		tiempo_servidor_comienza_ocupado=tiempo_arribo;
 		lista_eventos.add(primerEvento);
 		vector_tiempos_arribos.add(tiempo_arribo);
 		//Genero la partida del arribo anterior, el tiempo de esta partida es infinito.
 		Evento segundoEvento = new Evento("Partida", Math.pow(2, 32));
 		lista_eventos.add(segundoEvento);
 		
-		while(reloj < 1000)
+		while(reloj < 10000)
 		{
 			String tipo_evento = tiempos();
 			if(tipo_evento.equals("Arribo"))
@@ -82,8 +92,9 @@ public class ColaSimple {
 		{
 			System.out.println(vector_tiempos_arribos.get(i));
 		}*/
-		System.out.println("Cantidad de arribos:"+ arribos + " \n\n Tiempo de servicio: "+TIEMPO_SERVICIO + " personas/segundo \n Tiempo entre arribos: "+TIEMPO_ENTRE_ARRIBOS+" segundos/persona \n\n");
+		System.out.println("Cantidad de arribos:"+ arribos + " \n\n Tiempo de servicio: "+TIEMPO_SERVICIO + " personas/segundo \n Tiempo entre arribos: "+TIEMPO_ENTRE_ARRIBOS+" personas/segundos \n Factor de Utilizacion: "+TIEMPO_ENTRE_ARRIBOS/TIEMPO_SERVICIO+"\n\n");
 		System.out.println(" Demora Promedio: "+new DecimalFormat("#.####").format(demoras_acumuladas/nro_clientes_atendidos)+" segundos \n "+"uso promedio del servidor: "+new DecimalFormat("#.####").format(area_uso_servidor/reloj)+" \n"+" Tamaño promedio de cola: "+ new DecimalFormat("#.####").format(area_cli_cola/reloj)+" personas");
+		System.out.println("\n Probabilidad de que haya "+KELEMENTOS+" elemento/s en el sistema: "+array_kElementos.get(array_kElementos.size()-1));
 		System.out.println("\n\n Clientes en cola: "+nro_clientes_cola+ "\n Clientes Atendidos: "+nro_clientes_atendidos);
 		//System.out.println("tamaño db: "+ array_db.size() +" \n tamño dq: "+array_dq.size());
 		
@@ -105,6 +116,12 @@ public class ColaSimple {
 	            for (int i=0;i<array_dq.size();i++)
 	            {
 	            		out.write(new DecimalFormat("#.####").format(array_dq.get(i))+ " \t"+new DecimalFormat("#.####").format(array_tiempo_dq.get(i))+" \n");
+	            }
+	            out.close();
+	            out = new BufferedWriter(new FileWriter(ubicacion+"prob_kElementos.txt"));
+	            for (int i=0;i<array_kElementos.size();i++)
+	            {
+	            		out.write(new DecimalFormat("#.####").format(array_kElementos.get(i))+ " \t"+new DecimalFormat("#.####").format(array_tiempo_kElemento.get(i))+" \n");
 	            }
 	            out.close();
 	        } catch (IOException e) {
@@ -133,24 +150,26 @@ public class ColaSimple {
 		
 		if(servidor_ocupado)
 		{
+			
 			area_cli_cola =  area_cli_cola + (nro_clientes_cola * (reloj - tiempo_ultimo_evento));//tiempo - tiempo_ultimo_evento --> tiempo transcurrido desde el último evento hasta ahora
 			array_dq.add(area_cli_cola/reloj);
+			if(nro_clientes_cola == KELEMENTOS)
+			{
+				acumKElementos = acumKElementos + (reloj - tiempo_ultimo_evento);
+				array_kElementos.add(acumKElementos/reloj);
+				array_tiempo_kElemento.add(reloj);
+			}
 			array_tiempo_dq.add(reloj);
 			nro_clientes_cola ++;
-			vector_tiempos_arribos.add(reloj);
-			double nuevo_tiempo_servicio = exp(TIEMPO_SERVICIO);
-			lista_eventos.add(new Evento("Partida", (reloj + nuevo_tiempo_servicio)));
 		}
 		else
 		{
 			servidor_ocupado = true;
 			tiempo_servidor_comienza_ocupado = reloj;
-			array_cli_at.add(nro_clientes_atendidos);
-			array_dd.add(demoras_acumuladas);
-			nro_clientes_atendidos ++;	
-			//double nuevo_tiempo_servicio = exp(1/TIEMPO_SERVICIO);
-			//lista_eventos.add(new Evento("Partida", (reloj + nuevo_tiempo_servicio)));
+			double nuevo_tiempo_servicio = exp(TIEMPO_SERVICIO);
+			lista_eventos.add(new Evento("Partida", (reloj + nuevo_tiempo_servicio)));
 		}
+		vector_tiempos_arribos.add(reloj);
 		double proximo_arribo = exp(TIEMPO_ENTRE_ARRIBOS);
 		lista_eventos.add(new Evento("Arribo", (reloj + proximo_arribo)));
 		tiempo_ultimo_evento = reloj;
@@ -160,34 +179,41 @@ public class ColaSimple {
 	private static void partida() {
 		if(nro_clientes_cola==0)
 		{
-			servidor_ocupado = false;
+			servidor_ocupado = false; // servidor libre
 			//lista_eventos.add(new Evento("Partida", exp(Math.pow(2, 32))));
 		}
 		else
 		{
+			
 			area_cli_cola = area_cli_cola+ (nro_clientes_cola * (reloj - tiempo_ultimo_evento));
 			array_dq.add(area_cli_cola/reloj);
+			if(nro_clientes_cola == KELEMENTOS)
+			{	
+				acumKElementos = acumKElementos + (reloj - tiempo_ultimo_evento);
+				array_kElementos.add(acumKElementos/reloj);
+				array_tiempo_kElemento.add(reloj);
+			}
 			array_tiempo_dq.add(reloj);
-			
-			area_uso_servidor = area_uso_servidor+ (reloj - tiempo_servidor_comienza_ocupado);
+			area_uso_servidor = area_uso_servidor + (reloj - tiempo_servidor_comienza_ocupado);
 			array_db.add(area_uso_servidor/reloj);
+			nro_clientes_cola --;
 			array_tiempo_db.add(reloj);
 			
-			nro_clientes_cola --;
 			
-			double tiempoArribo = (vector_tiempos_arribos.get(e));
+			double tiempoArribo = (vector_tiempos_arribos.get(nro_clientes_atendidos));
 			demoras_acumuladas =  demoras_acumuladas + (reloj - tiempoArribo);
-			array_dd.add(demoras_acumuladas);
 			
-			e++;
-			nro_clientes_atendidos ++;
+			array_dd.add(demoras_acumuladas/nro_clientes_atendidos);
+		
 			array_cli_at.add(nro_clientes_atendidos);
 			
 			double nuevo_tiempo_servicio = exp(TIEMPO_SERVICIO);
 			lista_eventos.add(new Evento("Partida", (reloj + nuevo_tiempo_servicio)));
+			tiempo_servidor_comienza_ocupado=reloj;
 		}
 		tiempo_ultimo_evento = reloj;
-		tiempo_servidor_comienza_ocupado=reloj;
+		nro_clientes_atendidos ++;
+		
 		
 	}
 	
@@ -196,7 +222,7 @@ public class ColaSimple {
 		Random rand=new Random();
 	    double random;
 	    random=rand.nextDouble();
-	    retorno=Math.log(1-random/coef)/-coef;
+	    retorno=Math.log(random/coef)/-coef;
 	    return retorno;
     }
 }
